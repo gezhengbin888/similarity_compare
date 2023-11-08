@@ -61,20 +61,23 @@ func calcScoreMain(s_new string, s_old string) float64 {
  * @date 8/15/23  09:37
  * @description 根据偏移量等参数获取单位相似度
  */
+
 func calcScore(contailStr string, score float64, strIndexOld int, strIndexNew int, newLen int, oldLen int, newSLen int, oldSLen int) float64 {
 	contailStrLen := utf8.RuneCountInString(contailStr)
-	xi := GetConfig().Xi
 	/*积分增加项= 长度匹配量 * 长度占比 越长越接近1*/
-	fContailStrLen := float64(contailStrLen)
-	fNewLen := float64(newLen)
-	asd := fContailStrLen / (fNewLen + ((fNewLen - fContailStrLen) / xi / 2))
+	asd := float64(contailStrLen) / (float64((newLen + oldLen)) / 2) * (float64(contailStrLen) / float64(contailStrLen+1))
+	//fmt.Println(utils.Typeof(asd))
+	//.Println(asd)
 	score += asd
 	pian := math.Abs(float64(strIndexOld - strIndexNew))
-	//fmt.Println("偏移量", asd, pian)
+	//fmt.Println("偏移量",asd,pian)
 	if pian != 0 {
-		pianRate := pian / float64(newSLen)
-		asff := (asd * pianRate) / xi
-		score -= asff
+		xi := pian / float64((newSLen+oldSLen)/2)
+		asff := (asd * xi) / 6 //宽松度 越大越不敏感 越大分数越大  越不严格
+		if asff < asd {
+			score -= asff
+			//fmt.Println(asff)
+		}
 	}
 	//fmt.Println("/n")
 	return score

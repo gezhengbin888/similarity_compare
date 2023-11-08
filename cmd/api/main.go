@@ -42,3 +42,28 @@ func main() {
 	fmt.Printf("Server is running on port %d...\n", port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
+
+/**
+ * @author AronGe
+ * @date 8/15/23  11:05
+ * @description
+ */
+func handleRequest2(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		var requestData RequestData
+		err := json.NewDecoder(r.Body).Decode(&requestData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		//fmt.Println("Received data: item1 - %s", requestData.Item1)
+		//response := utils.GetBugAiBrs(requestData.Item1)
+		utils.GetHost()
+		response := 1
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
