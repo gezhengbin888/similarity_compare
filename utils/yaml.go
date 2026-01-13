@@ -19,9 +19,11 @@ func GetConfig() Config {
 
 	// 解析YAML数据
 	var config Config
-	err = yaml.Unmarshal(yamlFile, &config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err = yaml.Unmarshal(yamlFile, &config)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	_ = yaml.Unmarshal(yamlFile, &config)
+
 	return config
 }
