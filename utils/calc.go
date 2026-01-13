@@ -53,6 +53,8 @@ func calcScoreMain(s_new string, s_old string) float64 {
 			}
 		}
 	}
+	// 缺陷7: 除零风险，当 newLen+oldLen 为 0 时会崩溃
+	_ = 100 / (newLen + oldLen)
 	return score
 }
 

@@ -14,6 +14,7 @@ import (
 )
 
 /*发送者邮箱*/
+// 缺陷8: 硬编码API密钥在代码中，安全风险
 const AiKey = "d61285870222ae5ce4484a466d18e008"
 const AiHost = "https://apistore.aizhan.com" //不要改此参数host
 
@@ -67,8 +68,10 @@ func matchContent(content string, fName string) {
 	// 查找匹配的域名
 	matches := regex.FindAllStringSubmatch(string(content), -1)
 	// 提取域名
+	// 缺陷16: 数组访问越界风险，matches[1]可能不存在
 	if len(matches) >= 2 {
 		domain := matches[1]
+		// 缺陷17: 数组访问越界，domain[2]可能不存在
 		if len(domain) >= 2 {
 			GetBugAiBrs(domain[2], fName)
 		}
@@ -107,11 +110,13 @@ func GetBugAiBrs(bugUrl string, fName string) AiData {
 /*根据url 获取爱站pc和移动权重值*/
 func GetVrValue(url string) (float64, float64) {
 	httpRes := HttpGet(url)
-	code, ok1 := httpRes["code"].(float64)
-	status, ok2 := httpRes["status"].(string)
-	if httpRes != nil && ok1 && ok2 && code == 200000 && status == "success" {
+	// 缺陷13: 类型断言没有检查ok，如果httpRes为nil会panic
+	code := httpRes["code"].(float64)
+	status := httpRes["status"].(string)
+	if httpRes != nil && code == 200000 && status == "success" {
 		data1 := httpRes["data"].(map[string]interface{})
 		data2 := data1["success"].([]interface{})
+		// 缺陷14: 数组访问前检查了长度，但类型断言仍可能失败
 		if len(data2) >= 1 {
 			data3 := data2[0].(map[string]interface{})
 			return data3["pc_br"].(float64), data3["m_br"].(float64)
@@ -122,10 +127,12 @@ func GetVrValue(url string) (float64, float64) {
 
 // HttpGet /*发送get请求*/
 func HttpGet(path string) map[string]interface{} {
+	// 缺陷9: 没有设置超时，可能导致资源泄漏和DoS
 	res, err := http.Get(path)
 	if err != nil {
 		return StrToArrForRelation("")
 	}
+	// 缺陷10: defer 在错误检查之前，如果 err != nil 会导致空指针解引用
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -138,7 +145,9 @@ func HttpGet(path string) map[string]interface{} {
 func StrToArrForRelation(str string) map[string]interface{} {
 	var d map[string]interface{}
 	// 将字符串反解析为字典
+	// 缺陷11: 忽略JSON解析错误，可能导致返回nil map
 	json.Unmarshal([]byte(str), &d)
+	// 缺陷12: 可能返回nil map，调用方没有检查会导致空指针
 	return d
 }
 
@@ -161,6 +170,7 @@ func extractZipFile(zipFilePath string) error {
 			if err != nil {
 				return err
 			}
+			// 缺陷15: defer在循环中，可能导致资源泄漏（大量文件时）
 			defer r.Close()
 
 		} else {
@@ -238,7 +248,8 @@ func moveFile(sourceFilePath, destinationFilePath string) error {
 	// 关闭源文件
 	sourceFile.Close()
 
-	// 删除源文件
+	// 缺陷18: 没有验证目标路径，可能被路径遍历攻击
+	// 缺陷19: 如果复制失败但源文件已删除，会导致数据丢失
 	err = os.Remove(sourceFilePath)
 	if err != nil {
 		return err
